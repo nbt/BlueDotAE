@@ -6,6 +6,14 @@ class BlueDotAe < Padrino::Application
 
   enable :sessions
 
+  get "/" do
+    "Hello, World!"
+  end
+
+  get :about, :map => "/about" do
+    render :haml, "%h3 This is a simple hello world app."
+  end
+
   ##
   # Caching support
   #
