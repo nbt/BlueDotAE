@@ -1,0 +1,12 @@
+---
+:orm: !binary |-
+  ZGF0YW1hcHBlcg==
+:test: !binary |-
+  cnNwZWM=
+:mock: none
+:script: !binary |-
+  anF1ZXJ5
+:renderer: !binary |-
+  aGFtbA==
+:stylesheet: !binary |-
+  c2Nzcw==
