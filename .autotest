@@ -1,0 +1,4 @@
+require 'autotest/growl'
+require 'autotest/fsevent'
+# see https://github.com/svoop/autotest-growl for more options
+Autotest::Growl::image_dir = 'ampelmaennchen'

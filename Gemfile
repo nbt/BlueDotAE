@@ -21,6 +21,9 @@ gem 'dm-core'
 
 group :test do
   gem "rspec"
+  gem 'autotest-standalone'
+  gem 'autotest-growl'
+  gem 'autotest-fsevent'
   gem "rack-test", :require => "rack/test"
   gem 'vcr'
   gem 'webmock'
