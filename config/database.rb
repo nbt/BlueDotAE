@@ -12,8 +12,10 @@
 DataMapper.logger = logger
 DataMapper::Property::String.length(255)
 
+user = ENV['POSTGRESQL_USERNAME'] || 'root'
+pass = ENV['POSTGRESQL_PASSWORD'] || ''
 case Padrino.env
-  when :development then DataMapper.setup(:default, "postgres://root@localhost/blue_dot_ae_development")
-  when :production  then DataMapper.setup(:default, "postgres://root@localhost/blue_dot_ae_production")
-  when :test        then DataMapper.setup(:default, "postgres://root@localhost/blue_dot_ae_test")
+when :development then DataMapper.setup(:default, "postgres://#{user}:#{pass}@localhost/blue_dot_ae_development")
+when :production  then DataMapper.setup(:default, "postgres://#{user}:#{pass}@localhost/blue_dot_ae_production")
+when :test        then DataMapper.setup(:default, "postgres://#{user}:#{pass}@localhost/blue_dot_ae_test")
 end
