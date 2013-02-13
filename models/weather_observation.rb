@@ -1,15 +1,32 @@
 require 'net/http'
 
-class WeatherHistory
+class WeatherObservation
   include DataMapper::Resource
 
   # property <name>, <type>
   property :id, Serial
+  belongs_to :weather_station
+  property :date, DateTime
+  property :temperature_max_f, Float
+  property :temperature_avg_f, Float
+  property :temperature_min_f, Float
+  property :dewpoint_max_f, Float
+  property :dewpoint_avg_f, Float
+  property :dewpoint_min_f, Float
+  property :humidity_max, Float
+  property :humidity_avg, Float
+  property :humidity_min, Float
+  property :pressure_max_in, Float
+  property :pressure_avg_in, Float
+  property :pressure_min_in, Float
+  property :windspeed_max_mph, Float
+  property :windspeed_avg_mph, Float
+  property :precipitation_in, Float
 
   def self.fetch(station_id, start_time, frequency = :daily)
   end
 
-  class Wunderground < WeatherHistory
+  class Wunderground < WeatherObservation
 
     def self.fetch(station_id, start_time, frequency = :daily)
       uri = make_uri(station_id, start_time, frequency)

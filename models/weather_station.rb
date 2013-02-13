@@ -5,6 +5,7 @@ class WeatherStation
 
   # property <name>, <type>
   property :id, Serial
+  has n, :weather_observations
   property :callsign, String
   property :station_type, String
   property :lat, Decimal, :precision => 9, :scale => 6
