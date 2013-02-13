@@ -1,4 +1,5 @@
 require 'time_utilities'
+require 'net/http'
 
 class WeatherHistory
   include DataMapper::Resource
@@ -6,19 +7,19 @@ class WeatherHistory
   # property <name>, <type>
   property :id, Serial
 
-  def fetch(station_id, start_time, frequency = :daily)
+  def self.fetch(station_id, start_time, frequency = :daily)
   end
 
   class Wunderground < WeatherHistory
 
-    def fetch(station_id, start_time, frequency = :daily)
+    def self.fetch(station_id, start_time, frequency = :daily)
       quantization = get_quantization(frequency)
       start_time = TimeUtilities.quantize_time(start_time, quantization)
       uri = make_uri(station_id, start_time, frequency)
-      WebCache.with_db_catche(uri) {|uri| Net::HTTP.get(URI(uri)) }
+      WebCache.with_db_cache(uri) {|uri| Net::HTTP.get_response(URI(uri)) }
     end
 
-    def get_quantization(frequency)
+    def self.get_quantization(frequency)
       case frequency
       when :daily
         :year
@@ -29,7 +30,7 @@ class WeatherHistory
       end
     end
 
-    def make_uri(station_id, start_time, frequency)
+    def self.make_uri(station_id, start_time, frequency)
       s = "http://www.wunderground.com/"
       if (is_airport?(station_id))
         case frequency
@@ -43,9 +44,13 @@ class WeatherHistory
         when :daily
           s + "weatherstation/WXDailyHistory.asp?ID=#{station_id}&graphspan=custom&month=1&day=1&year=#{start_time.year}&monthend=12&dayend=31&yearend=#{start_time.year}&format=1"
         when :hourly
-          s = "weatherstation/WXDailyHistory.asp?ID=#{station_id}&month=#{start_time.month}&day=#{start_time.day}&year=#{start_time.year}&format=1"
+          s + "weatherstation/WXDailyHistory.asp?ID=#{station_id}&month=#{start_time.month}&day=#{start_time.day}&year=#{start_time.year}&format=1"
         end
       end
+    end
+
+    def self.is_airport?(station_id)
+      station_id =~ /\AK...\Z/
     end
 
   end
