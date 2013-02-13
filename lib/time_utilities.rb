@@ -8,8 +8,8 @@ class TimeUtilities
     ENV['TZ'] = prev_tz
   end
 
-  def self.quantize_time(t, frequency, is_end = false)
-    case frequency
+  def self.quantize_time(t, quantization, is_end = false)
+    case quantization
     when :year
       t0 = Time.new(t.year, 1, 1)
       is_end ? t0.to_date.next_year(1).to_time : t0
@@ -30,7 +30,7 @@ class TimeUtilities
       t0 = Time.new(t.year, t.month, t.day, t.hour, t.min)
       is_end ? t0 + 60 : t0
     else 
-      raise ArgumentError.new("start_or_end must be :start or :end")
+      raise ArgumentError.new("unrecognized quantization, found #{quantization}")
     end
   end
     
