@@ -23,10 +23,10 @@ module WithRetries
       begin
          return yield
       rescue *options[:ignore] => e
-        $stderr.puts("=== ignoring #{e.class}: #{e.message}") if options[:verbose]
+        # $stderr.puts("=== ignoring #{e.class}: #{e.message}") if options[:verbose]
         return
       rescue *options[:retry] => e
-        $stderr.puts("=== rescuing #{e.class}: #{e.message} (retry = #{retries}/#{options[:max_retries]})") if options[:verbose]
+        # $stderr.puts("=== rescuing #{e.class}: #{e.message} (retry = #{retries}/#{options[:max_retries]})") if options[:verbose]
         raise if (retries >= options[:max_retries])
         if (options[:delay_exponent] > 0.0) 
           delay_time = options[:delay_exponent] ** retries
