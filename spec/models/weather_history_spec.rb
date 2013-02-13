@@ -16,7 +16,7 @@ describe "WeatherHistory Model" do
         resp = WeatherHistory::Wunderground.fetch("KCAMANHA3", Time.local(2012, 3, 4), :daily)
         resp.code.should == "200"
         records = resp.body.split("\n")
-        records.length.should == 726
+        records.length.should == 64
       end
     end
 
@@ -34,7 +34,7 @@ describe "WeatherHistory Model" do
         resp = WeatherHistory::Wunderground.fetch("KLAX", Time.local(2012, 3, 4), :daily)
         resp.code.should == "200"
         records = resp.body.split("\n")
-        records.length.should == 368
+        records.length.should == 33
       end
     end
 
