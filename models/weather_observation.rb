@@ -28,8 +28,9 @@ class WeatherObservation
 
   class Wunderground < WeatherObservation
 
-    def self.fetch(station_id, start_time, frequency = :daily)
-      uri = make_uri(station_id, start_time, frequency)
+    # extract the raw HTML (really psuedo-CSV)
+    def self.extract(station, start_time, frequency = :daily)
+      uri = make_uri(station.callsign, start_time, frequency)
       WebCache.with_db_cache(uri) {|uri| Net::HTTP.get_response(URI(uri)) }
     end
 
