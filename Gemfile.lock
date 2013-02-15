@@ -1,9 +1,6 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    activesupport (3.2.11)
-      i18n (~> 0.6)
-      multi_json (~> 1.0)
     activesupport (3.2.12)
       i18n (~> 0.6)
       multi_json (~> 1.0)
@@ -38,6 +35,8 @@ GEM
       dm-core (~> 1.2.0)
     do_postgres (0.10.12)
       data_objects (= 0.10.12)
+    domain_name (0.5.7)
+      unf (~> 0.0.3)
     eventmachine (1.0.0)
     ffi (1.3.1)
     haml (3.1.7)
@@ -49,10 +48,20 @@ GEM
       i18n (>= 0.4.0)
       mime-types (~> 1.16)
       treetop (~> 1.4.8)
+    mechanize (2.5.1)
+      domain_name (~> 0.5, >= 0.5.1)
+      mime-types (~> 1.17, >= 1.17.2)
+      net-http-digest_auth (~> 1.1, >= 1.1.1)
+      net-http-persistent (~> 2.5, >= 2.5.2)
+      nokogiri (~> 1.4)
+      ntlm-http (~> 0.1, >= 0.1.1)
+      webrobots (~> 0.0, >= 0.0.9)
     mime-types (1.20.1)
-    mime-types (1.21)
-    multi_json (1.5.0)
     multi_json (1.5.1)
+    net-http-digest_auth (1.2.1)
+    net-http-persistent (2.8)
+    nokogiri (1.5.6)
+    ntlm-http (0.1.1)
     padrino (0.10.7)
       padrino-admin (= 0.10.7)
       padrino-cache (= 0.10.7)
@@ -95,6 +104,7 @@ GEM
     rspec-expectations (2.12.1)
       diff-lcs (~> 1.1.3)
     rspec-mocks (2.12.2)
+    rubyzip (0.9.9)
     sass (3.2.5)
     sinatra (1.3.4)
       rack (~> 1.4)
@@ -113,12 +123,16 @@ GEM
     treetop (1.4.12)
       polyglot
       polyglot (>= 0.3.1)
+    unf (0.0.5)
+      unf_ext
+    unf_ext (0.0.5)
     url_mount (0.2.1)
       rack
     vcr (2.4.0)
     webmock (1.9.0)
       addressable (>= 2.2.7)
       crack (>= 0.1.7)
+    webrobots (0.0.13)
 
 PLATFORMS
   ruby
@@ -136,10 +150,12 @@ DEPENDENCIES
   dm-timestamps
   dm-validations
   haml
+  mechanize
   padrino (= 0.10.7)
   rack-test
   rake
   rspec
+  rubyzip
   sass
   sinatra-flash
   thin
