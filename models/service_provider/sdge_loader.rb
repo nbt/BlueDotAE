@@ -90,7 +90,9 @@ module ServiceProvider
       # Submit request for data
       st = TimeUtilities.quantize_time(self.start_time, :month)
       et = TimeUtilities.offset_days(TimeUtilities.quantize_time(self.start_time, :month, true), -1)
-      # TODO: pass IANA time zone as an argument
+      # TODO: pass IANA time zone as an argument.
+      # TODO: try passing UTC as an argument to fix problem noted 
+      # in translate_meter_readings -- what happens then?
       params = {
         "MeterId" => self.meter_id.to_s,
         "StartDate" => st.strftime("%m/%d/%Y"),
@@ -103,6 +105,9 @@ module ServiceProvider
       # Extract resulting filename 
       json = JSON.load(p5.body)
       filename = json["FileName"]
+      # TODO: consider using a raw Net::HTTP.get() so we cache the
+      # entire request/response and not just the zip file -- might
+      # simplify error recovery.
       p6 = web_agent.get("/LoadAnalysis/Handlers/GreenButtonHandler.ashx?file=&name=#{filename}.zip")
 
       # p6.body now contains a .zip file
@@ -112,8 +117,10 @@ module ServiceProvider
     # file of the XML with meter readings.  translate it into array of
     # hash objects, suitable for instantiation as MeterReading objects
     def translate_meter_readings(mechanize_page)
-      xml_string = unzip(mechanize_page.body)
-      xml_doc = Nokogiri::XML(xml_string)
+      unzipped = unzip(mechanize_page.body)
+      xml_entry = unzipped.find {|k, v| k =~ /.*\.xml$/ }
+      raise LoadError.new("cannot locate xml data") unless xml_entry
+      xml_doc = Nokogiri::XML(xml_entry[1])
       # see [nokogiri-talk] doc.xpath() abysmally slow
       readings = if (true)
                    xml_doc.remove_namespaces!
@@ -123,12 +130,12 @@ module ServiceProvider
                                  'meter' => "http://naesb.org/espi")
                  end
       hourly = readings.map do |reading|
-        # puts "start=#{reading.xpath('./timePeriod/start').text}, dur=#{reading.xpath('./timePeriod/duration').text}"
-        # [Time.at(reading.xpath('./timePeriod/start').text.to_i).getlocal(0),
-        #  reading.xpath('./timePeriod/duration').text.to_i,
-        #  reading.xpath('./value').text.to_f]
-        # NB: ./timePeriod/start is in UTC
-        start_time = Time.at(reading.xpath('./timePeriod/start').text.to_i)
+        # NB: The GreenButton data timePeriod/start is evidently in
+        # UTC, but it correctly should be in local time.
+        #
+        # TODO: figure out proper way to set offset timePeriod/start
+        # to correct time zone
+        start_time = Time.at(reading.xpath('./timePeriod/start').text.to_i).getlocal(0)
         duration_s = reading.xpath('./timePeriod/duration').text.to_i
         value = reading.xpath('./value').text.to_f
         {:start_time => start_time, :duration_s => duration_s, :value => value}

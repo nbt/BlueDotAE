@@ -7,7 +7,8 @@ gem 'thin'
 gem 'rake'
 gem 'sinatra-flash', :require => 'sinatra/flash'
 gem 'mechanize'
-gem 'rubyzip'
+# gem 'rubyzip'
+gem 'zipruby'
 
 # Component requirements
 gem 'bcrypt-ruby', :require => "bcrypt"
