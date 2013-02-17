@@ -24,8 +24,8 @@ module ServiceProvider
       raise(LoadError.new("failed to get login page")) unless page
       login_form = page.forms.find {|f| f.name =~ /Login/}
       raise(LoadError.new("failed to get login form")) unless login_form
-      login_form['USER'] = access_credentials["user_id"]
-      login_form['PASSWORD'] = access_credentials["password"]
+      login_form['USER'] = service_account.credentials["user_id"]
+      login_form['PASSWORD'] = service_account.credentials["password"]
       page = web_agent.submit(login_form)
       # submit form and make sure we're logged in (should NOT have login form)
       form = page.forms.find {|f| f.name =~ /Login/}
@@ -52,7 +52,7 @@ module ServiceProvider
     # code to hit the remote server, so if we can find a cached
     # version of the data, we use that.
     def extract_meter_readings
-      cache_key = self.class.name + __method__.to_s + meter_id.to_s + start_time.to_s
+      cache_key = self.class.name + __method__.to_s + service_account.credentials["meter_id"].to_s + start_time.to_s
       WebCache.with_db_cache(cache_key) {|k| extract_meter_readings_from_remote }
     end
     
@@ -82,10 +82,10 @@ module ServiceProvider
       # TODO: If we switch meters, we may need to submit the form
       # specifically to discover minDate, maxDate, maxDataAllowed
       f4 = p4.form_with(:name => "Form1")
-      $stderr.puts("=== meter ids = #{f4.field_with(:name => 'ddlMeters').options}")
-      $stderr.puts("=== earliest day = #{f4.field_with(:name => 'minDate').value}")
-      $stderr.puts("=== latest day = #{f4.field_with(:name => 'maxDate').value}")
-      $stderr.puts("=== max days = #{f4.field_with(:name => 'maxDataAllowed').value}")
+      # $stderr.puts("=== meter ids = #{f4.field_with(:name => 'ddlMeters').options}")
+      # $stderr.puts("=== earliest day = #{f4.field_with(:name => 'minDate').value}")
+      # $stderr.puts("=== latest day = #{f4.field_with(:name => 'maxDate').value}")
+      # $stderr.puts("=== max days = #{f4.field_with(:name => 'maxDataAllowed').value}")
 
       # Submit request for data
       st = TimeUtilities.quantize_time(self.start_time, :month)
@@ -94,7 +94,7 @@ module ServiceProvider
       # TODO: try passing UTC as an argument to fix problem noted 
       # in translate_meter_readings -- what happens then?
       params = {
-        "MeterId" => self.meter_id.to_s,
+        "MeterId" => service_account.credentials["meter_id"].to_s,
         "StartDate" => st.strftime("%m/%d/%Y"),
         "EndDate" => et.strftime("%m/%d/%Y"),
         "OlsonTimeZoneKey" => "America/Los_Angeles"
@@ -135,10 +135,13 @@ module ServiceProvider
         #
         # TODO: figure out proper way to set offset timePeriod/start
         # to correct time zone
-        start_time = Time.at(reading.xpath('./timePeriod/start').text.to_i).getlocal(0)
+        date = Time.at(reading.xpath('./timePeriod/start').text.to_i).getlocal(0)
         duration_s = reading.xpath('./timePeriod/duration').text.to_i
-        value = reading.xpath('./value').text.to_f
-        {:start_time => start_time, :duration_s => duration_s, :value => value}
+        quantity = reading.xpath('./value').text.to_f
+        {:service_account => service_account,
+          :date => date,
+          :duration_s => duration_s,
+          :quantity => quantity}
       end
 
     end

@@ -4,8 +4,8 @@ module ServiceProvider
     include LoaderHelpers
 
     # load one month of meter readings for the given meter_id
-    def self.etl_meter_readings(meter_id, start_time, access_credentials)
-      self.new(meter_id, start_time, access_credentials).etl_meter_readings
+    def self.etl_meter_readings(service_account, start_time)
+      self.new(service_account, start_time).etl_meter_readings
     end
     
     # load one monthly bill for the given meter_id
@@ -13,12 +13,11 @@ module ServiceProvider
       self.new(meter_id, start_time, access_credentials).etl_service_bill
     end
     
-    attr_reader :meter_id, :start_time, :access_credentials, :options, :web_agent
+    attr_reader :service_account, :start_time, :options, :web_agent
     
-    def initialize(meter_id, start_time, access_credentials, options = {})
-      @meter_id = meter_id
+    def initialize(service_account, start_time, options = {})
+      @service_account = service_account
       @start_time = start_time
-      @access_credentials = access_credentials
       @options = options
       # ----
       @web_agent = BlueDotBot.new
@@ -51,10 +50,7 @@ module ServiceProvider
     # return a list of MeterReading objects.
     def load_meter_readings(hashes)
       hashes.map do |h|
-        r = MeterReading.first_or_create({:service_provider => self.class.to_s,
-                                           :meter_id => h[:meter_id],
-                                           :date => h[:date]},
-                                         h)
+        r = MeterReading.first_or_create({:service_account => h[:service_account], :date => h[:date]}, h)
         raise RecordError.new("failed to save #{r.inspect}: #{r.errors.full_messages}") unless r.id
       end
     end
