@@ -21,6 +21,7 @@ gem 'dm-migrations'
 gem 'dm-constraints'
 gem 'dm-aggregates'
 gem 'dm-core'
+gem 'dm-types'
 
 group :test do
   gem "rspec"
@@ -28,6 +29,7 @@ group :test do
   gem 'autotest-growl'
   gem 'autotest-fsevent'
   gem "rack-test", :require => "rack/test"
+  gem 'timecop'
   gem 'vcr'
   gem 'webmock'
 end

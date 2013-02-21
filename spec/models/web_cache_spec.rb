@@ -3,7 +3,7 @@ require 'vcr_helper'
 
 describe "WebCache Model" do
   before(:each) do
-    WebCache.destroy
+    WebCache.destroy!
   end
   let(:web_cache) { WebCache.new }
 

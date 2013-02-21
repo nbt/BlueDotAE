@@ -3,22 +3,20 @@ module ServiceProvider
   class LoaderBase
     include LoaderHelpers
 
-    # load one month of meter readings for the given meter_id
-    def self.etl_meter_readings(service_account, start_time)
-      self.new(service_account, start_time).etl_meter_readings
-    end
-    
-    # load one monthly bill for the given meter_id
-    def self.etl_service_bill(meter_id, start_time, access_credentials)
-      self.new(meter_id, start_time, access_credentials).etl_service_bill
+    # load all avaialble billing and interval data for this account
+    def self.fetch_billing_data(service_account)
+      self.new(service_account).fetch_billing_data
     end
     
     attr_reader :service_account, :start_time, :options, :web_agent
     
-    def initialize(service_account, start_time, options = {})
+    DEFAULT_OPTIONS = {
+      :proxy_port => nil
+    }
+
+    def initialize(service_account, options = {})
       @service_account = service_account
-      @start_time = start_time
-      @options = options
+      @options = DEFAULT_OPTIONS.merge(options)
       # ----
       @web_agent = BlueDotBot.new
       @web_agent.set_proxy('localhost', @options[:proxy_port]) if @options[:proxy_port].present?
@@ -32,19 +30,11 @@ module ServiceProvider
       }
     end
 
-    def etl_meter_readings
-      self.load_meter_readings(self.translate_meter_readings(self.extract_meter_readings()))
+    # to be subclassed
+    def fetch_billing_data
     end
-    
-    # Return a raw HTTP response whose body contains meter readings
-    def extract_meter_readings
-    end
-    
-    # translate a raw HTTP response into an array of hash objects,
-    # suitable for instantiation as MeterReading objects
-    def translate_meter_readings(http_response)
-    end
-    
+
+    # obsolete
     # Each hash in the list of hashes represents a meter reaading.
     # Commit to the MeterReading table if not already present and
     # return a list of MeterReading objects.

@@ -6,8 +6,8 @@ class WebCache
 
   # property <name>, <type>
   property :id, Serial
-  property :serialized_key, Text
-  property :serialized_value, Text
+  property :ckey, Object
+  property :cvalue, Object
   property :created_at, DateTime
   property :updated_at, DateTime
 

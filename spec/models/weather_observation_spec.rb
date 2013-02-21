@@ -3,8 +3,8 @@ require 'vcr_helper'
 
 describe "WeatherObservation Model" do
   before(:each) do
-    WebCache.destroy
-    WeatherObservation.destroy
+    WebCache.destroy!
+    WeatherObservation.destroy!
     @airport_station = double().tap {|o| 
       o.stub(:id => 1, :callsign => "KLAX", :station_type => "airport")
     }

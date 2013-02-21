@@ -9,14 +9,13 @@ module WithDBCache
   #     Net::HTTP.get(URI(uri))
   #   }
   #
-  # Assumes MyModel has serialized_key and serialized_value attributes.
+  # Assumes MyModel has ckey and cvalue attributes.
   #
-  def with_db_cache(akey)
-    serialized_key = YAML.dump(akey)
-    if (r = self.all(:serialized_key => serialized_key)).count != 0
-      YAML.load(r.first.serialized_value)
+  def with_db_cache(key)
+    if (r = self.all(:ckey => key)).count != 0
+      r.first.cvalue
     else
-      yield(akey).tap {|avalue| self.create(:serialized_key => serialized_key, :serialized_value => YAML.dump(avalue))}
+      yield(key).tap {|value| self.create(:ckey => key, :cvalue => value)}
     end
   end
 
