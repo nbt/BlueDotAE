@@ -124,7 +124,7 @@ module ServiceProvider
     def fetch_billing_summary(form, option)
       date = translate_mmddyy(option.text)
       summary_key = self.class.billing_summary_cache_key(service_account.credentials["meter_id"], date)
-      body = WebCache.with_db_cache(summary_key) do
+      body = WebCaches::SDGE::BillSummary.fetch(summary_key) do
         page = fetch_billing_summary_from_remote(form, option)
         page.body
       end
@@ -159,7 +159,7 @@ module ServiceProvider
       details_key = self.class.billing_details_cache_key(service_account.credentials["meter_id"],
                                                          start_date,
                                                          end_date)
-      WebCache.with_db_cache(details_key) { 
+      WebCaches::SDGE::BillDetail.fetch(details_key) { 
         fetch_billing_details_from_remote(form, option) 
       }
     end
@@ -195,7 +195,7 @@ module ServiceProvider
       readings_key = self.class.meter_readings_cache_key(service_account.credentials["meter_id"],
                                                          start_date,
                                                          end_date)
-      WebCache.with_db_cache(readings_key) { 
+      WebCaches::SDGE::MeterReading.fetch(readings_key) { 
         # Slight magic here: If fetch_meter_reading_from_remote raises
         # an RecordError, we store the RecordError itself in the
         # cache.  This prevents us from re-trying a remote read every

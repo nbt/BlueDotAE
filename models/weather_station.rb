@@ -26,7 +26,7 @@ class WeatherStation
   
   def self.find_stations_near(lat, lng)
     uri = "http://api.wunderground.com/api/#{WUNDERGROUND_API_KEY}/geolookup/q/#{lat},#{lng}.json"
-    response = WebCache.with_db_cache(uri) {|uri| 
+    response = WebCaches::WeatherStation.fetch(uri) {|uri|
       # TODO: rate-limit queries
       # TODO: retry / ignore some responses
       Net::HTTP.get_response(URI(uri))

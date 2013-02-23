@@ -38,7 +38,9 @@ class WeatherObservation
 
     def extract
       uri = create_uri
-      WebCache.with_db_cache(uri) {|uri| Net::HTTP.get_response(URI(uri))}
+      WebCaches::WeatherObservation.fetch(uri) {|uri|
+        Net::HTTP.get_response(URI(uri))
+      }
     end
 
     # Return a URI to query the remote site

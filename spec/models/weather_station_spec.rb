@@ -3,7 +3,6 @@ require 'vcr_helper'
 
 describe "WeatherStation Model" do
   before(:each) do
-    WebCache.destroy!
     WeatherStation.destroy!
   end
 

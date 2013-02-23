@@ -6,7 +6,10 @@ FULL_EXAMPLE = "ServiceAccount fetch_billing_data ordinary case"
 describe "ServiceAccount Model" do
   before(:each) do
     ServiceAccount.destroy!
-    WebCache.destroy!
+    # TODO: Migrate utility-specific tests into separate modules
+    WebCaches::SDGE::BillSummary.destroy!
+    WebCaches::SDGE::BillDetail.destroy!
+    WebCaches::SDGE::MeterReading.destroy!
   end
 
   let(:service_account) { ServiceAccount.new }
@@ -37,17 +40,18 @@ describe "ServiceAccount Model" do
       end
       
       it 'fetches billing and meter data' do
-        WebCache.count.should == 0
+        WebCaches::SDGE::BillSummary.count.should == 0
+        WebCaches::SDGE::BillDetail.count.should == 0
+        WebCaches::SDGE::MeterReading.count.should == 0
         VCR.use_cassette("ServiceAccount_fetch_sdge_billing_data_clean_run1", 
                          :match_requests_on => [:method, :uri, :query]) do
           expect {@sdge_account.fetch_billing_data}.to_not raise_error
         end
-        summary_count = 25
-        detail_count = 25
-        meter_reading_count = 25
         # not an elegant test, but true at the time the vcr cassette
         # was recorded
-        WebCache.count.should == summary_count + detail_count + meter_reading_count
+        WebCaches::SDGE::BillSummary.count.should == 25
+        WebCaches::SDGE::BillDetail.count.should == 25
+        WebCaches::SDGE::MeterReading.count.should == 25
       end
 
       describe 'after caching' do
