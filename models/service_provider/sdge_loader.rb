@@ -204,7 +204,7 @@ module ServiceProvider
         begin
           fetch_meter_reading_from_remote(start_date, end_date) 
         rescue RecordError => e
-          $stderr.puts("=== rescued #{e.inspect}")
+          $stderr.print("\n=== rescued #{e.inspect}")
           e
         end
       }
