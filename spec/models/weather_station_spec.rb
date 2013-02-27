@@ -2,9 +2,7 @@ require 'spec_helper'
 require 'vcr_helper'
 
 describe "WeatherStation Model" do
-  before(:each) do
-    WeatherStation.destroy!
-  end
+  before(:each) { reset_db }
 
   let(:weather_station) { WeatherStation.new }
 

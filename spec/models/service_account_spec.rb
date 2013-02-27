@@ -4,13 +4,7 @@ require 'vcr_helper'
 FULL_EXAMPLE = "ServiceAccount fetch_billing_data ordinary case"
 
 describe "ServiceAccount Model" do
-  before(:each) do
-    ServiceAccount.destroy!
-    # TODO: Migrate utility-specific tests into separate modules
-    WebCaches::SDGE::BillSummary.destroy!
-    WebCaches::SDGE::BillDetail.destroy!
-    WebCaches::SDGE::MeterReading.destroy!
-  end
+  before(:each) { reset_db }
 
   let(:service_account) { ServiceAccount.new }
   it 'can be created' do
@@ -28,9 +22,12 @@ describe "ServiceAccount Model" do
       now = DateTime.new(2010, 1, 2)
       future = DateTime.new(2010, 1, 3)
 
-      sa = ServiceAccount.create(:next_fetch_at => past)
-      sb = ServiceAccount.create(:next_fetch_at => future)
-      sc = ServiceAccount.create(:next_fetch_at => nil)
+      # TODO: use FactoryGirl
+      client = Client.create
+      premises = Premises.create(:client => client)
+      sa = ServiceAccount.create(:next_fetch_at => past, :premises => premises)
+      sb = ServiceAccount.create!(:next_fetch_at => future, :premises => premises)
+      sc = ServiceAccount.create!(:next_fetch_at => nil, :premises => premises)
 
       ServiceAccount.ready_to_fetch(now).should =~ [sa, sc]
     end
@@ -42,14 +39,14 @@ describe "ServiceAccount Model" do
     end
     
     it 'should call the underlying loader class' do
-      service_account = ServiceAccount.create(:loader_class => "LoaderBase")
+      service_account = ServiceAccount.create!(:loader_class => "LoaderBase")
       ServiceProvider::LoaderBase.should_receive(:fetch_billing_data).with(service_account)
       expect {service_account.fetch_billing_data}.to_not raise_error
     end
 
     it 'should set next_fetch_at to value returned by fetch_billing_data' do
       date = DateTime.new(2012, 1, 1)
-      service_account = ServiceAccount.create(:loader_class => "LoaderBase")
+      service_account = ServiceAccount.create!(:loader_class => "LoaderBase")
       ServiceProvider::LoaderBase.should_receive(:fetch_billing_data) { date }
       service_account.fetch_billing_data
       service_account.next_fetch_at.should == date
@@ -59,7 +56,7 @@ describe "ServiceAccount Model" do
     # service_provider/ subdirectory
     describe "from sdge" do
       before(:each) do
-        @sdge_account = ServiceAccount.create(:loader_class => "SDGELoader",
+        @sdge_account = ServiceAccount.create!(:loader_class => "SDGELoader",
                                               :credentials => {
                                                 "user_id" => "ChrisWrightFamily", 
                                                 "password" => "SDGEolus1402",

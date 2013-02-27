@@ -5,7 +5,9 @@ class WeatherStation
 
   # property <name>, <type>
   property :id, Serial
-  has n, :weather_observations
+  has n, :premises_weather_station_adjacencies, :constraint => :destroy
+  has n, :premises, 'Premises', :through => :premises_weather_station_adjacencies
+  has n, :weather_observations, :constraint => :destroy
   property :callsign, String
   property :station_type, String
   property :lat, Decimal, :precision => 9, :scale => 6

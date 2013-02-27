@@ -18,8 +18,13 @@ describe ActsAsKeyValueStore do
     KVTest.finalize
   end
   after(:all) do
-    adapter = DataMapper.repository(:default).adapter
-    adapter.execute("DROP TABLE #{KVTest.storage_name}")
+    # TODO: We've created the kv_tests table but not destroyed it,
+    # because doing so will make reset_db complain that kv_tests
+    # doesn't exist.  The proper fix is to destroy it AND remove
+    # the KVTest class as a descendent of DataMapper (but I don't
+    # know how to do that at the moment).
+    # adapter = DataMapper.repository(:default).adapter
+    # adapter.execute("DROP TABLE #{KVTest.storage_name}")
   end
 
   before(:each) do

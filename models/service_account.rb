@@ -3,7 +3,8 @@ class ServiceAccount
 
   # property <name>, <type>
   property :id, Serial
-  has n, :meter_readings
+  belongs_to :premises
+  has n, :meter_readings, :constraint => :destroy
   property :loader_class, String
   property :credentials, Object
   property :next_fetch_at, DateTime
