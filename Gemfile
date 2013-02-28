@@ -24,11 +24,12 @@ gem 'dm-core'
 gem 'dm-types'
 
 group :test do
-  gem "rspec"
   gem 'autotest-standalone'
   gem 'autotest-growl'
   gem 'autotest-fsevent'
+  gem 'factory_girl'
   gem "rack-test", :require => "rack/test"
+  gem "rspec"
   gem 'timecop'
   gem 'vcr'
   gem 'webmock'

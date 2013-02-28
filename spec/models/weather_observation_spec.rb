@@ -4,20 +4,14 @@ require 'vcr_helper'
 describe "WeatherObservation Model" do
   before(:each) do
     reset_db
-# TODO: FactoryGirl
-#     @airport_station = double().tap {|o| 
-#       o.stub(:id => 1, :callsign => "KLAX", :station_type => "airport")
-#     }
-#     @pws_station = double().tap {|o| 
-#       o.stub(:id => 1, :callsign => "KCAMANHA3", :station_type => "pws")
-#     }
-    @airport_station = WeatherStation.create(:callsign => "KLAX", :station_type => "airport")
-    @pws_station = WeatherStation.create(:callsign => "KCAMANHA3", :station_type => "pws")
+    @airport_station = FactoryGirl.create(:weather_station, :callsign => "KLAX", :station_type => "airport")
+    @pws_station = FactoryGirl.create(:weather_station, :callsign => "KCAMANHA3", :station_type => "pws")
   end
 
-  let(:weather_observation) { WeatherObservation.new }
   it 'can be created' do
+    weather_observation = FactoryGirl.create(:weather_observation)
     weather_observation.should_not be_nil
+    weather_observation.should be_saved
   end
   
   describe "WundergroundPWS" do

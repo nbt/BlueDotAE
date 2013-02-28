@@ -4,10 +4,10 @@ require 'vcr_helper'
 describe "WeatherStation Model" do
   before(:each) { reset_db }
 
-  let(:weather_station) { WeatherStation.new }
-
   it 'can be created' do
+    weather_station = FactoryGirl.create(:weather_station)
     weather_station.should_not be_nil
+    weather_station.should be_saved
   end
 
   describe "find_stations_near" do
