@@ -1,17 +1,9 @@
 # ================================================================
 # sequence generators
 
-FactoryGirl.define do
+module SequenceHelpers
 
-  sequence :email do |n|
-    "user#{n}@example.com"
-  end
-
-  # ================
-  # somewhat silly.
-  sequence :name do |n| 
-
-    first_names = %w( Aaron Abby Abdul Abe Abel Abigail Abraham Abram
+  FIRST_NAMES = %w( Aaron Abby Abdul Abe Abel Abigail Abraham Abram
       Ada Adalberto Adam Adan Addie Adela Adele Adeline Adolfo Adolph
       Adrian Adriana Adrienne Agnes Agustin Ahmad Ahmed Aida Aileen
       Aimee Aisha Al Alan Alana Alba Albert Alberta Alberto Alden Aldo
@@ -241,7 +233,7 @@ FactoryGirl.define do
       Xavier Yesenia Yolanda Yong Young Yvette Yvonne Zachariah Zachary
       Zachery Zack Zackary Zane Zelma ) 
 
-    last_names = %w(SMITH JOHNSON
+  LAST_NAMES = %w(SMITH JOHNSON
       WILLIAMS BROWN JONES MILLER DAVIS GARCIA RODRIGUEZ WILSON MARTINEZ
       ANDERSON TAYLOR THOMAS HERNANDEZ MOORE MARTIN JACKSON THOMPSON
       WHITE LOPEZ LEE GONZALEZ HARRIS CLARK LEWIS ROBINSON WALKER PEREZ
@@ -356,26 +348,48 @@ FactoryGirl.define do
       LUTZ DUARTE KIDD KEY COOKE GOFF DEJESUS MARIN DOTSON BONNER COTTON
       MERRILL LINDSAY LANCASTER) 
 
-    "#{first_names[(n*373) % first_names.length]} #{last_names[n % last_names.length]}" 
+  STREET_NAMES = %w(Aspen Birch Cedar Dogwood Elm Ginkgo Hickory
+      Ironwood Juniper Linden Maple Oak Palm Quince Redwood Spruce
+      Tulip Willow)
+
+  STREET_TYPES = %w(Avenue Boulevard Drive Place Road Street Way)
+
+  CITIES = %w(Franklin Clinton Springfield Greenville Salem Fairview
+      Madison Washington Georgetown Arlington Ashland Burlington
+      Manchester Marion Oxford Clayton Jackson Milton Auburn Dayton
+      Lexington Milford Riverside Cleveland Dover Hudson Kingston
+      Mount\ Vernon Newport Oakland)
+
+  STATES = %w(AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA
+      ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PW PA RI SC
+      SD TN TX UT VI VT VA WA WV WI WY)
+
+  def pick(array, i)
+    array[i % array.length]
   end
 
-  # ================
-  # even sillier.
+end
+
+include SequenceHelpers
+
+FactoryGirl.define do
+
+  sequence :email do |n|
+    "#{pick(FIRST_NAMES, n*373).downcase}.#{pick(LAST_NAMES, n*577).downcase}@example.com"
+  end
+
+  sequence :name do |n| 
+    "#{pick(FIRST_NAMES, n*373)} #{pick(LAST_NAMES, n*577)}"
+  end
+
   sequence :address do |n|
     # NB: length of street_name, street_type, city, state arrays are
     # all chosen to be relatively prime.
     street_number = 1000 + n
-    street_name = %w(Aspen Birch Cedar Dogwood Elm Ginkgo Hickory Ironwood 
-      Juniper Linden Maple Oak Palm Quince Redwood Spruce Tulip Willow)[n % 18]
-    street_type = %w(Avenue Boulevard Drive Place Road Street Way)[n % 7]
-    city = %w(Franklin Clinton Springfield Greenville Salem Fairview
-      Madison Washington Georgetown Arlington Ashland Burlington
-      Manchester Marion Oxford Clayton Jackson Milton Auburn Dayton
-      Lexington Milford Riverside Cleveland Dover Hudson Kingston Mount\ Vernon 
-      Newport Oakland)[n %31]
-    state = %w(AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA
-      ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PW PA RI SC
-      SD TN TX UT VI VT VA WA WV WI WY)[n % 53]
+    street_name = pick(STREET_NAMES, n)
+    street_type = pick(STREET_TYPES, n)
+    city = pick(CITIES, n)
+    state = pick(STATES, n)
     zip = sprintf("%05d", (1073676287 * (n + 1)) % 100000)
     "#{street_number} #{street_name} #{street_type}, #{city} #{state} #{zip}, USA"
   end

@@ -17,6 +17,7 @@ FactoryGirl.define do
 
   factory :premises do
     client
+    address
   end    
   
   factory :service_account do
