@@ -77,4 +77,70 @@ describe "ServiceAccount Model" do
 
   end
 
+
+  describe 'nightly task' do
+    
+    it 'calls fetch_billing_data' do
+      FactoryGirl.create(:service_account, 
+                         :loader_class => "SDGELoader",
+                         :credentials => {
+                           "user_id" => "ChrisWrightFamily", 
+                           "password" => "SDGEolus1402",
+                           "meter_id" => "05219047"})
+      ServiceAccount.any_instance.should_receive(:fetch_billing_data)
+      ServiceAccount.nightly_task
+    end
+
+    it 'does nothing if all service_accounts are up to date' do
+      FactoryGirl.create(:service_account, 
+                         :next_fetch_at => DateTime.now + 1 # tomorrow
+                         )
+      ServiceAccount.any_instance.should_not_receive(:fetch_billing_data)
+      ServiceAccount.nightly_task
+    end
+
+    it 'reports success with valid account' do
+      FactoryGirl.create(:service_account, 
+                         :loader_class => "SDGELoader",
+                         :credentials => {
+                           "user_id" => "ChrisWrightFamily", 
+                           "password" => "SDGEolus1402",
+                           "meter_id" => "05219047"})
+      VCR.use_cassette("ServiceAccount_nightly_task_reports_success_with_valid_account", :tag => :with_time_frozen) do
+        begin
+          logging_data = with_output_captured { ServiceAccount.nightly_task }
+          logging_data[:stderr].should =~ /success/
+        ensure
+          Timecop.return
+        end
+      end
+    end
+
+    it 'reports failure with invalid account' do
+      FactoryGirl.create(:service_account, 
+                         :loader_class => "SDGELoader",
+                         :credentials => {
+                           "user_id" => "ChrisWrightFamily", 
+                           "password" => "i_am_not_the_password",
+                           "meter_id" => "05219047"})
+      VCR.use_cassette("ServiceAccount_reports_failure_with_invalid_account", :tag => :with_time_frozen) do
+        begin
+          logging_data = with_output_captured { ServiceAccount.nightly_task }
+          logging_data[:stderr].should =~ /failure/
+        ensure
+          Timecop.return
+        end
+      end
+    end
+
+    it 'reports error with unknown loader' do
+      FactoryGirl.create(:service_account, 
+                         :loader_class => "NonExistentLoader",
+                         :credentials => {})
+      logging_data = with_output_captured { ServiceAccount.nightly_task }
+      logging_data[:stderr].should =~ /error/
+    end
+
+  end
+
 end

@@ -3,8 +3,6 @@ require 'vcr_helper'
 
 describe "SDGE Loader" do
 
-  # TODO: migrate all service_provider specific tests into the
-  # service_provider/ subdirectory
   describe "from sdge" do
     before(:each) do
       @sdge_account = FactoryGirl.create(:service_account, 
