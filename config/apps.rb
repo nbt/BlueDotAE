@@ -22,12 +22,15 @@
 #
 
 ##
-# Setup global project settings for your apps. These settings are inherited by every subapp. You can
-# override these settings in the subapps as needed.
+# Setup global project settings for your apps. These settings are
+# inherited by every subapp. You can override these settings in the
+# subapps as needed.
 #
 Padrino.configure_apps do
   # enable :sessions
   set :session_secret, 'ea88af43f4732db29bd5f18bd3eeca2a8e879056b1ef38da1cdb9790b89a1cc2'
+  # load the version file to set VERSION
+  require File.join(File.dirname(__FILE__), "version")
 end
 
 # Mounts the core application for this project
