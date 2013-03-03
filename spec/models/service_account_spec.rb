@@ -12,6 +12,30 @@ describe "ServiceAccount Model" do
     service_account.should be_saved
   end
 
+  it 'saves to db' do
+    ServiceAccount.count.should == 0
+    service_account = FactoryGirl.create(:service_account)
+    ServiceAccount.count.should == 1
+  end
+
+  describe "credentials" do
+
+    it "should not store unencrypted credentials in the db" do
+      credentials = {:this_is => :secret}
+      FactoryGirl.create(:service_account, :credentials => credentials)
+      service_account = ServiceAccount.first
+      service_account.attributes.should_not have_key(:credentials)
+    end
+
+    it "should store and retreive credentials" do
+      credentials = {:this_is => :secret}
+      FactoryGirl.create(:service_account, :credentials => credentials)
+      service_account = ServiceAccount.first
+      service_account.credentials.should == credentials
+    end
+
+  end
+
   describe "ready_to_fetch"  do
     
     it 'should return empty list with no ServiceAccount records' do
@@ -49,69 +73,6 @@ describe "ServiceAccount Model" do
       ServiceProvider::LoaderBase.should_receive(:fetch_billing_data) { date }
       service_account.fetch_billing_data
       service_account.next_fetch_at.should == date
-    end
-
-    # TODO: migrate all service_provider specific tests into the
-    # service_provider/ subdirectory
-    describe "from sdge" do
-      before(:each) do
-        @sdge_account = FactoryGirl.create(:service_account, 
-                                           :loader_class => "SDGELoader",
-                                           :credentials => {
-                                             "user_id" => "ChrisWrightFamily", 
-                                             "password" => "SDGEolus1402",
-                                             "meter_id" => "05219047"})
-      end
-      
-      it 'fetches billing and meter data' do
-        WebCaches::SDGE::BillSummary.count.should == 0
-        WebCaches::SDGE::BillDetail.count.should == 0
-        WebCaches::SDGE::MeterReading.count.should == 0
-        VCR.use_cassette("ServiceAccount_fetch_sdge_billing_data_clean_run1", 
-                         :match_requests_on => [:method, :uri, :query]) do
-          expect {@sdge_account.fetch_billing_data}.to_not raise_error
-        end
-        # not an elegant test, but true at the time the vcr cassette
-        # was recorded
-        WebCaches::SDGE::BillSummary.count.should == 25
-        WebCaches::SDGE::BillDetail.count.should == 25
-        WebCaches::SDGE::MeterReading.count.should == 25
-      end
-
-      describe 'after caching' do
-        before(:each) do
-          # load up the caches
-          VCR.use_cassette("ServiceAccount_fetch_sdge_billing_data_clean_run2", 
-                           :match_requests_on => [:method, :uri, :query]) do
-            @sdge_account.fetch_billing_data
-          end
-        end
-
-        it 'logs in exactly once' do
-          ServiceProvider::SDGELoader.any_instance.should_receive(:login).once.and_call_original
-          VCR.use_cassette("ServiceAccount_fetch_sdge_billing_data_clean_run3", 
-                           :match_requests_on => [:method, :uri, :query]) do
-            expect {@sdge_account.fetch_billing_data}.to_not raise_error
-          end
-        end
-
-        it 'does not access remote site for individual bills' do
-          ServiceProvider::SDGELoader.any_instance.should_not_receive(:fetch_billing_summary_from_remote)
-          ServiceProvider::SDGELoader.any_instance.should_not_receive(:fetch_billing_details_from_remote)
-          ServiceProvider::SDGELoader.any_instance.should_not_receive(:fetch_meter_reading_from_remote)
-          VCR.use_cassette("ServiceAccount_fetch_sdge_billing_data_clean_run4", :tag => :with_time_frozen) do
-            begin
-              @sdge_account.fetch_billing_data.should == @sdge_account
-              @sdge_account.next_fetch_at.should be_instance_of(DateTime)
-              @sdge_account.next_fetch_at.should > DateTime.now
-            ensure
-              Timecop.return
-            end
-          end
-        end
-
-      end
-      
     end
 
   end

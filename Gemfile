@@ -1,3 +1,4 @@
+# -*- Mode: Ruby; -*-
 source :rubygems
 
 # Server requirements
@@ -7,8 +8,8 @@ gem 'thin'
 gem 'rake'
 gem 'sinatra-flash', :require => 'sinatra/flash'
 gem 'mechanize'
-# gem 'rubyzip'
 gem 'zipruby'
+gem 'attr_encryptor'
 
 # Component requirements
 gem 'bcrypt-ruby', :require => "bcrypt"
