@@ -3,10 +3,12 @@ class Premises
 
   # properties
   property :id, Serial
-  property :address, String
+  property :raw_address, String
   property :find_weather_stations_at, DateTime
-  property :lat, Decimal, :precision => 9, :scale => 6
-  property :lng, Decimal, :precision => 9, :scale => 6
+  property :lat, Float
+  property :lng, Float
+  property :altitude_m, Float
+  property :zillow_attributes, Object
 
   # associations
   belongs_to :client, :key => true
@@ -22,28 +24,31 @@ class Premises
 
   def self.nightly_task
     self.stale_weather_stations.each do |premises|
-      begin
-        $stderr.print("Premises(#{premises.id}).find_weather_stations...")
-        stations = premises.find_weather_stations
-        $stderr.print("found #{stations.count} stations...success\n")
-      rescue => e
-        $stderr.print("error: #{e.message}\n")
-        $stderr.print(e.backtrace.join("\n"))
-      end
+      premises.find_weather_stations
     end
   end
-
+  
   def find_weather_stations
+    begin
+      $stderr.print("Premises(#{self.id}).find_weather_stations...")
+      stations = self.find_weather_stations_aux
+      $stderr.print("found #{stations.count} stations...success\n")
+    rescue => e
+      $stderr.print("error: #{e.message}\n")
+      $stderr.print(e.backtrace.join("\n"))
+    end
+    stations
+  end
+
+  def find_weather_stations_aux
     # start with a clean slate
     self.premises_weather_station_adjacencies.destroy
     stations = WeatherStation.find_stations_near(self.lat, self.lng)
     stations.each do |station| 
       pwsa = PremisesWeatherStationAdjacency.create!(:premises => self, :weather_station => station)
     end
-    self.find_weather_stations_at = DateTime.now + FIND_WEATHER_STATIONS_INTERVAL
-    self.save
+    self.update(:find_weather_stations_at => DateTime.now + FIND_WEATHER_STATIONS_INTERVAL)
     stations
   end
-
 
 end

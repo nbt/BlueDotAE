@@ -157,6 +157,8 @@ class WeatherObservation
 
   def self.etl(weather_station, start_time)
     LOADER_CLASSES[weather_station.station_type].new(weather_station, start_time).etl
+    weather_station.last_fetched_at = DateTime.now
+    weather_station.save
   end
     
 end

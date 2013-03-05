@@ -10,9 +10,10 @@ class WeatherStation
   has n, :weather_observations, :constraint => :destroy
   property :callsign, String
   property :station_type, String
-  property :lat, Decimal, :precision => 9, :scale => 6
-  property :lng, Decimal, :precision => 9, :scale => 6
-  property :altitude_m, Decimal, :precision => 9, :scale => 2
+  property :lat, Float
+  property :lng, Float
+  property :altitude_m, Float
+  property :last_fetched_at, DateTime
   property :created_at, DateTime
   property :updated_at, DateTime
 
@@ -38,6 +39,39 @@ class WeatherStation
     process_stations(response.body)
   end
 
+  # Load weather observations for each weather station that is
+  # out of date relative to its associated service accounts.
+  def self.nightly_task
+    self.all.each { |station| station.update_observations }
+  end
+
+  # private (not really)
+
+  def update_observations
+    service_accounts = self.service_accounts
+    start_date = nil
+    end_date = nil
+    # Find earliest and latest billing dates for each service account
+    # associated with this weather station
+    service_accounts.each do |s|
+      start_date = s.start_date if (!s.start_date.nil? && (start_date.nil? || s.start_date < start_date))
+      end_date = s.end_date if (!s.end_date.nil? && (end_date.nil? || s.end_date > end_date))
+    end
+    return unless start_date && end_date
+    # TODO: if calling etl on each station is too expensive, create
+    # WeatherStation.start_date and WeatherStation.end_date columns
+    # and test against those before doing ETL.
+    date = DateTime.new(start_date.year, start_date.month)
+    while (date < end_date)
+      WeatherObservation.etl(self, date)
+      date = date.next_month
+    end
+  end
+  
+  def service_accounts
+    self.premises.map {|p| p.service_accounts}.flatten
+  end
+
   def self.process_stations(json)
     hash = JSON.load(json)
     nearby = hash["location"]["nearby_weather_stations"]
@@ -58,10 +92,7 @@ class WeatherStation
   end
 
   def self.process_station(station_type, callsign, lat, lng)
-    # workaround for https://github.com/datamapper/dm-validations/issues/51
-    lat1 = BigDecimal(lat.to_f.round(6).to_s)
-    lng1 = BigDecimal(lng.to_f.round(6).to_s)
     WeatherStation.first_or_create({:callsign => callsign, :station_type => station_type},
-                                   {:lat => lat1, :lng => lng1})
+                                   {:lat => lat, :lng => lng})
   end
 end

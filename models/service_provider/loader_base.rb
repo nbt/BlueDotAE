@@ -30,7 +30,10 @@ module ServiceProvider
       }
     end
 
-    # to be subclassed
+    # to be subclassed.  returns a hash of three elements:
+    # {:start_date => <earliest date inclusive fetched>,
+    #  :end_date => <last date exclusive fetched>,
+    #  :next_check_date => <date at which next to check>}
     def fetch_billing_data
     end
 

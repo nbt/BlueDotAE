@@ -17,7 +17,7 @@ FactoryGirl.define do
 
   factory :premises do
     client
-    address
+    raw_address { generate(:address) }
   end    
   
   factory :service_account do
@@ -28,6 +28,9 @@ FactoryGirl.define do
   factory :premises_weather_station_adjacency do
     premises
     weather_station
+  end
+
+  factory :test_model do
   end
 
   factory :weather_station do

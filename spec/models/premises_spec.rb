@@ -3,11 +3,11 @@ require 'vcr_helper'
 
 describe "Premises Model" do
   LA = {:lat => 33.888389, :lng => -118.4111556}
-  LA_COUNT = 46
+  LA_COUNT = 38
   MA = {:lat => 42.368813, :lng => -71.0893229}
   PA = {:lat => 39.947488, :lng => -75.178526}
   SF = {:lat => 37.7747645, :lng => -122.4292645}
-  SF_COUNT = 35
+  SF_COUNT = 39
 
   before(:each) { reset_db }
 
@@ -61,7 +61,7 @@ describe "Premises Model" do
 
     it 'succeeds on valid premises' do
       FactoryGirl.create(:premises, LA)
-      Premises.any_instance.should_receive(:find_weather_stations).and_return([])
+      Premises.any_instance.should_receive(:find_weather_stations_aux).and_return([])
       logging_data = with_output_captured { Premises.nightly_task }
       logging_data[:stderr].should =~ /success/
     end

@@ -14,5 +14,5 @@ module BDUtilities
     pattern = File.join(module_dir, "**", "*" + ext)
     Dir[pattern].each {|f| require f }
   end
-    
+
 end

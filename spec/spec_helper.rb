@@ -34,3 +34,8 @@ def with_output_captured
     $stdout, $stderr = o_stdout, o_stderr
   end
 end
+
+# Workaround for https://github.com/travisjeffery/timecop/issues/72
+def truncate_to_seconds(datetime)
+  DateTime.new(datetime.year, datetime.month, datetime.day, datetime.hour, datetime.minute, datetime.second)
+end

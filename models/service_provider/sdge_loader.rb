@@ -89,11 +89,13 @@ module ServiceProvider
 
       fetch_meter_readings(billing_dates)
 
-      # finally, return the next date at which we should re-check the 
-      # web site
-      
-      first_bill_ending_date = billing_dates[0][1]
-      next_check_date(first_bill_ending_date)
+      # NB: This assumes bills are ordered most recent first
+      ending_date = billing_dates[0][1]
+
+      # finally return
+      { :start_date => billing_dates.last[0],
+        :end_date => ending_date,
+        :next_check_at => next_check_at(ending_date)}
 
     end
 
@@ -114,7 +116,7 @@ module ServiceProvider
 
     # our best guess as to when to next poll the remote site.
     # TODO: could be better
-    def next_check_date(ending_date)
+    def next_check_at(ending_date)
       ending_date + 31
     end
 
@@ -153,7 +155,6 @@ module ServiceProvider
 
     # ================================================================
     # billing details
-    # vivant - security co
 
     def fetch_billing_details(form, option, start_date, end_date)
       details_key = self.class.billing_details_cache_key(service_account.credentials["meter_id"],

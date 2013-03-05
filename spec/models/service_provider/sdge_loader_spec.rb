@@ -52,8 +52,8 @@ describe "SDGE Loader" do
         VCR.use_cassette("ServiceAccount_fetch_sdge_billing_data_clean_run4", :tag => :with_time_frozen) do
           begin
             @sdge_account.fetch_billing_data.should == @sdge_account
-            @sdge_account.next_fetch_at.should be_instance_of(DateTime)
-            @sdge_account.next_fetch_at.should > DateTime.now
+            @sdge_account.next_check_at.should be_instance_of(DateTime)
+            @sdge_account.next_check_at.should > DateTime.now
           ensure
             Timecop.return
           end

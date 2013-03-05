@@ -42,15 +42,15 @@ describe "ServiceAccount Model" do
       ServiceAccount.ready_to_fetch.should == []
     end
 
-    it 'should return ServiceAccount records whose next_fetch_at is nil or in the past' do
+    it 'should return ServiceAccount records whose next_check_at is nil or in the past' do
       past = DateTime.new(2010, 1, 1)
       now = DateTime.new(2010, 1, 2)
       future = DateTime.new(2010, 1, 3)
 
       premises = FactoryGirl.create(:premises)
-      sa = FactoryGirl.create(:service_account, :next_fetch_at => past, :premises => premises)
-      sb = FactoryGirl.create(:service_account, :next_fetch_at => future, :premises => premises)
-      sc = FactoryGirl.create(:service_account, :next_fetch_at => nil, :premises => premises)
+      sa = FactoryGirl.create(:service_account, :next_check_at => past, :premises => premises)
+      sb = FactoryGirl.create(:service_account, :next_check_at => future, :premises => premises)
+      sc = FactoryGirl.create(:service_account, :next_check_at => nil, :premises => premises)
 
       ServiceAccount.ready_to_fetch(now).should =~ [sa, sc]
     end
@@ -61,18 +61,22 @@ describe "ServiceAccount Model" do
     before(:each) do
     end
     
-    it 'should call the underlying loader class' do
-      service_account = FactoryGirl.create(:service_account, :loader_class => "LoaderBase")
-      ServiceProvider::LoaderBase.should_receive(:fetch_billing_data).with(service_account)
-      expect {service_account.fetch_billing_data}.to_not raise_error
-    end
+    it 'should set next_check_at to value returned by fetch_billing_data' do
+      start_date = DateTime.new(2012, 1, 1)
+      end_date = DateTime.new(2012, 1, 2)
+      next_check_at = DateTime.new(2012, 1, 3)
 
-    it 'should set next_fetch_at to value returned by fetch_billing_data' do
       date = DateTime.new(2012, 1, 1)
       service_account = FactoryGirl.create(:service_account, :loader_class => "LoaderBase")
-      ServiceProvider::LoaderBase.should_receive(:fetch_billing_data) { date }
+      ServiceProvider::LoaderBase.should_receive(:fetch_billing_data) { 
+        { :start_date => start_date,
+          :end_date => end_date,
+          :next_check_at => next_check_at }
+      }
       service_account.fetch_billing_data
-      service_account.next_fetch_at.should == date
+      service_account.start_date.should == start_date
+      service_account.end_date.should == end_date
+      service_account.next_check_at.should == next_check_at
     end
 
   end
@@ -93,7 +97,7 @@ describe "ServiceAccount Model" do
 
     it 'does nothing if all service_accounts are up to date' do
       FactoryGirl.create(:service_account, 
-                         :next_fetch_at => DateTime.now + 1 # tomorrow
+                         :next_check_at => DateTime.now + 1 # tomorrow
                          )
       ServiceAccount.any_instance.should_not_receive(:fetch_billing_data)
       ServiceAccount.nightly_task

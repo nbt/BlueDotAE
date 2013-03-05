@@ -8,6 +8,23 @@ describe "WeatherObservation Model" do
     @pws_station = FactoryGirl.create(:weather_station, :callsign => "KCAMANHA3", :station_type => "pws")
   end
 
+  describe 'class etl' do
+    before(:each) do
+      @now = truncate_to_seconds(DateTime.now)
+      Timecop.freeze(@now)
+    end
+    after(:each) do
+      Timecop.return
+    end
+    
+    it 'updates weather_station last_fetched_at' do
+      WeatherObservation::WundergroundPWS.any_instance.should_receive(:etl)
+      WeatherObservation.etl(@pws_station, DateTime.new(2010, 1, 1))
+      @pws_station.last_fetched_at.should == @now
+    end
+
+  end
+
   it 'can be created' do
     weather_observation = FactoryGirl.create(:weather_observation)
     weather_observation.should_not be_nil
