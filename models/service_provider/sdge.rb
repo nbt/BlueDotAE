@@ -1,6 +1,6 @@
 module ServiceProvider
 
-  class SDGELoader < LoaderBase
+  class SDGE < Base
 
     SDGE_PORTAL = "https://myaccount.sdge.com"
     SDGE_LOGOUT = "https://myaccount.sdge.com/myAccount/pageFlows/signOut/SignOutController.jpf"

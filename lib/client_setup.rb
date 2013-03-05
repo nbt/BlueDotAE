@@ -27,7 +27,7 @@ module ClientSetup
     # Attach ServiceAccounts to the Premises (we assume same user_id and
     # password for each)
     meter_ids.each do |meter_id|
-      service_account = premises.service_accounts.create(:loader_class => "SDGELoader",
+      service_account = premises.service_accounts.create(:service_provider_class => "SDGE",
                                                          :credentials => {
                                                            "user_id" => user_id,
                                                            "password" => Base64::strict_decode64(user_pw),

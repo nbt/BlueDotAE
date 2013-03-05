@@ -22,7 +22,7 @@ FactoryGirl.define do
   
   factory :service_account do
     premises
-    loader_class "SDGE"
+    service_provider_class "SDGE"
   end
 
   factory :premises_weather_station_adjacency do

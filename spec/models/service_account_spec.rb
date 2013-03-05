@@ -67,8 +67,8 @@ describe "ServiceAccount Model" do
       next_check_at = DateTime.new(2012, 1, 3)
 
       date = DateTime.new(2012, 1, 1)
-      service_account = FactoryGirl.create(:service_account, :loader_class => "LoaderBase")
-      ServiceProvider::LoaderBase.should_receive(:fetch_billing_data) { 
+      service_account = FactoryGirl.create(:service_account, :service_provider_class => "Base")
+      ServiceProvider::Base.should_receive(:fetch_billing_data) { 
         { :start_date => start_date,
           :end_date => end_date,
           :next_check_at => next_check_at }
@@ -86,7 +86,7 @@ describe "ServiceAccount Model" do
     
     it 'calls fetch_billing_data' do
       FactoryGirl.create(:service_account, 
-                         :loader_class => "SDGELoader",
+                         :service_provider_class => "SDGE",
                          :credentials => {
                            "user_id" => "ChrisWrightFamily", 
                            "password" => "SDGEolus1402",
@@ -105,7 +105,7 @@ describe "ServiceAccount Model" do
 
     it 'reports success with valid account' do
       FactoryGirl.create(:service_account, 
-                         :loader_class => "SDGELoader",
+                         :service_provider_class => "SDGE",
                          :credentials => {
                            "user_id" => "ChrisWrightFamily", 
                            "password" => "SDGEolus1402",
@@ -122,7 +122,7 @@ describe "ServiceAccount Model" do
 
     it 'reports failure with invalid account' do
       FactoryGirl.create(:service_account, 
-                         :loader_class => "SDGELoader",
+                         :service_provider_class => "SDGE",
                          :credentials => {
                            "user_id" => "ChrisWrightFamily", 
                            "password" => "i_am_not_the_password",
@@ -137,9 +137,9 @@ describe "ServiceAccount Model" do
       end
     end
 
-    it 'reports error with unknown loader' do
+    it 'reports error with unknown service_provider' do
       FactoryGirl.create(:service_account, 
-                         :loader_class => "NonExistentLoader",
+                         :service_provider_class => "NonExistentServiceProvider",
                          :credentials => {})
       logging_data = with_output_captured { ServiceAccount.nightly_task }
       logging_data[:stderr].should =~ /error/

@@ -2,7 +2,7 @@ require 'zipruby'
 
 module ServiceProvider
 
-  module LoaderHelpers
+  module Helpers
 
     def unzip(page)
       {}.tap do |h|

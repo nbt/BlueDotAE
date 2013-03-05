@@ -1,7 +1,7 @@
 module ServiceProvider
 
-  class LoaderBase
-    include LoaderHelpers
+  class Base
+    include Helpers
 
     # load all avaialble billing and interval data for this account
     def self.fetch_billing_data(service_account)
