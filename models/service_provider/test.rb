@@ -7,16 +7,34 @@ module ServiceProvider
 
   class Test < ServiceProvider::Base
 
-    VALID_USERID = "rosco"
-    VALID_PASSWD = "ocsor"
+    VALID_CREDENTIALS = {:user_id => "rosco", :password => "ocsor"}
+    SUBACCOUNTS = [:electricity7890, :gas0123]
     START_DATE = DateTime.new(2010, 1, 1)
     END_DATE = DateTime.new(2011, 1, 1)
     NEXT_CHECK_AT = DateTime.new(2012, 1, 1)
+    SERVICE_ADDRESS = "123 Mulberry Street, Springfield IM, 20332, USA"
 
-    def fetch_billing_data
+    def login
       raise(LoadError.new("login failed")) unless credentials_valid?
-      WebCaches::Test.fetch(VALID_USERID) {
-        "#{VALID_USERID} was here"
+      return "a page"
+    end
+
+    def subaccounts
+      home_page                 # pretend we need to log in to access
+      SUBACCOUNTS
+    end
+
+    def service_address(subaccount)
+      raise LoadError.new("unrecognized subaccount #{subaccount}") unless subaccount_valid?(subaccount)
+      SERVICE_ADDRESS
+    end
+
+    def fetch_billing_data(subaccount)
+      raise LoadError.new("unrecognized subaccount #{subaccount}") unless subaccount_valid?(subaccount)
+      home_page
+      key = "#{VALID_CREDENTIALS[:user]} subaccount #{subaccount}"
+      WebCaches::Test.fetch(key) {
+        "#{VALID_CREDENTIALS[:user]} was here for #{subaccount}"
       }
       { :start_date => START_DATE,
         :end_date => END_DATE,
@@ -27,8 +45,11 @@ module ServiceProvider
     private
     
     def credentials_valid?
-      service_account.credentials["user_id"] == VALID_USERID &&
-        service_account.credentials["password"] == VALID_PASSWD &&
+      credentials == VALID_CREDENTIALS
+    end
+
+    def subaccount_valid?(subaccount)
+      return subaccounts.member?(subaccount)
     end
 
   end

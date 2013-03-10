@@ -7,7 +7,7 @@ class Premises
   property :find_weather_stations_at, DateTime
   property :lat, Float
   property :lng, Float
-  property :altitude_m, Float
+  property :elevation_m, Float
   property :zillow_attributes, Object
 
   # associations

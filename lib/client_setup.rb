@@ -2,7 +2,16 @@ require 'location_services'
 require 'zillow_services'
 
 # Jump-start populating the db.  Later, this will be a form-based
-# web page.
+# web page.  After calling this, you may call:
+#
+# ServiceAccount.nightly_task - to fetch billing data
+# Premises.nightly_task - to find weather stations
+# WeatherStation.nightly_task - to update observations
+#
+# If these are too heavy-handed, create a method in
+# Premises that does updates only on the relevant 
+# service_accounts and weather_stations
+
 module ClientSetup
   extend self
 
@@ -20,7 +29,7 @@ module ClientSetup
     premises = client.premises.create(:raw_address => raw_address,
                                       :lat => geocoded_attributes[:lat],
                                       :lng => geocoded_attributes[:lng],
-                                      :altitude_m => geocoded_attributes[:altitude_m],
+                                      :elevation_m => geocoded_attributes[:elevation_m],
                                       :zillow_attributes => zillow_attributes
                                       )
     
@@ -30,21 +39,8 @@ module ClientSetup
       service_account = premises.service_accounts.create(:service_provider_class => "SDGE",
                                                          :credentials => {
                                                            "user_id" => user_id,
-                                                           "password" => Base64::strict_decode64(user_pw),
-                                                           "meter_id" => meter_id})
-      # Fetch all available billing data from remote site(s)
-      $stderr.puts("fetching billing data for #{meter_id}")
-      service_account.fetch_billing_data
-    end
-    
-    # Discover / create weather stations in vicinity of premises
-    weather_stations = premises.find_weather_stations
-    $stderr.puts("found #{weather_stations.count} stations")
-    
-    # Fetch daily weather observations for proximate weather stations
-    weather_stations.each do |station|
-      $stderr.puts("update observations for #{station.callsign}")
-      station.update_observations
+                                                           "password" => Base64::strict_decode64(user_pw)},
+                                                         :subaccount => meter_id)
     end
     
   end

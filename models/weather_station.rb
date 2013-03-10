@@ -12,7 +12,7 @@ class WeatherStation
   property :station_type, String
   property :lat, Float
   property :lng, Float
-  property :altitude_m, Float
+  property :elevation_m, Float
   property :last_fetched_at, DateTime
   property :created_at, DateTime
   property :updated_at, DateTime
@@ -57,11 +57,13 @@ class WeatherStation
       start_date = s.start_date if (!s.start_date.nil? && (start_date.nil? || s.start_date < start_date))
       end_date = s.end_date if (!s.end_date.nil? && (end_date.nil? || s.end_date > end_date))
     end
+    # $stderr.puts("#{self.callsign}: has #{service_accounts.count} service accounts, start=#{start_date}, end=#{end_date}")
     return unless start_date && end_date
     # TODO: if calling etl on each station is too expensive, create
     # WeatherStation.start_date and WeatherStation.end_date columns
     # and test against those before doing ETL.
     date = DateTime.new(start_date.year, start_date.month)
+    $stderr.puts("Fetching weather observations for #{self.callsign} between #{date.iso8601} and #{end_date.iso8601}")
     while (date < end_date)
       WeatherObservation.etl(self, date)
       date = date.next_month
@@ -92,7 +94,28 @@ class WeatherStation
   end
 
   def self.process_station(station_type, callsign, lat, lng)
-    WeatherStation.first_or_create({:callsign => callsign, :station_type => station_type},
-                                   {:lat => lat, :lng => lng})
+    w = WeatherStation.first(:callsign => callsign, :station_type => station_type)
+    unless w
+      w = WeatherStation.create(:callsign => callsign, 
+                                :station_type => station_type,
+                                :lat => lat,
+                                :lng => lng,
+                                :elevation_m => get_elevation(callsign, lat, lng))
+      unless w
+        raise(StandardError.new("cannot create weather station: #{w.errors}"))
+      end
+    end
+    w
   end
+
+  private
+
+  def self.get_elevation(callsign, lat, lng)
+    $stderr.print("Elevation for WeatherStation #{callsign} @ #{lat}, #{lng} = ")
+    attrs = LocationServices.fetch_elevation(lat, lng)
+    elevation_m = attrs[:elevation_m]
+    $stderr.puts(elevation_m)
+    elevation_m
+  end
+
 end

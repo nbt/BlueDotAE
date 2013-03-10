@@ -1,3 +1,13 @@
+# ServiceClass is represents an account for billed services, such as
+# electricity or gas.  
+#
+# +service_provider_class+ names the service provider responsible for
+# fetching and translating billing information.  +credentials+ provide
+# the required authorization to access billing information from the
+# service_provider.  +subaccount+ distinguishes between multiple
+# accounts belonging to the user (e.g. if a user has both an
+# electricity and a gas account).
+
 class ServiceAccount
   include DataMapper::Resource
   include DataMapper::Validate
@@ -8,6 +18,7 @@ class ServiceAccount
   property :encrypted_credentials, String, :length => 255
   property :encrypted_credentials_salt, String, :length => 255
   property :encrypted_credentials_iv, String, :length => 255
+  property :subaccount, Object
   property :start_date, DateTime
   property :end_date, DateTime
   property :next_check_at, DateTime
@@ -50,6 +61,7 @@ class ServiceAccount
   # should next call fetch_billing_data.
   def fetch_billing_data_aux
     x = ServiceProvider.const_get(service_provider_class).fetch_billing_data(self)
+    $stderr.puts("fetch_billing_data returns #{x}")
     if !x[:start_date].nil? && (self.start_date.nil? || (self.start_date > x[:start_date]))
       self.start_date = x[:start_date]
     end
@@ -57,7 +69,9 @@ class ServiceAccount
       self.end_date = x[:end_date]
     end
     self.next_check_at = x[:next_check_at]
-    self.save
+    unless self.save
+      raise(StandardError.new("failed to update service account: #{self.errors}"))      
+    end
     self
   end
 

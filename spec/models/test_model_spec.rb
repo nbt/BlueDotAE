@@ -5,8 +5,8 @@ describe "TestModel Model" do
     test_model = TestModel.create
     test_model.callback_count.should == 1
   end
-  it 'fails to call before :save using FactoryGirl.create' do
-    pending("awating word on why FactoryGirl-created objects don't trigger callbacks")
+  it 'calls before :save using FactoryGirl.create' do
+    pending 'FactoryGirl does not play nice with DataMapper'
     test_model = FactoryGirl.create(:test_model)
     test_model.callback_count.should == 1
   end

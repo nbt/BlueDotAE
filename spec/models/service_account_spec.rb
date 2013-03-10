@@ -85,12 +85,7 @@ describe "ServiceAccount Model" do
   describe 'nightly task' do
     
     it 'calls fetch_billing_data' do
-      FactoryGirl.create(:service_account, 
-                         :service_provider_class => "SDGE",
-                         :credentials => {
-                           "user_id" => "ChrisWrightFamily", 
-                           "password" => "SDGEolus1402",
-                           "meter_id" => "05219047"})
+      FactoryGirl.create(:service_account)
       ServiceAccount.any_instance.should_receive(:fetch_billing_data)
       ServiceAccount.nightly_task
     end
@@ -103,38 +98,34 @@ describe "ServiceAccount Model" do
       ServiceAccount.nightly_task
     end
 
-    it 'reports success with valid account' do
+    it 'reports success with valid account and subaccount' do
       FactoryGirl.create(:service_account, 
-                         :service_provider_class => "SDGE",
-                         :credentials => {
-                           "user_id" => "ChrisWrightFamily", 
-                           "password" => "SDGEolus1402",
-                           "meter_id" => "05219047"})
-      VCR.use_cassette("ServiceAccount_nightly_task_reports_success_with_valid_account", :tag => :with_time_frozen) do
-        begin
-          logging_data = with_output_captured { ServiceAccount.nightly_task }
-          logging_data[:stderr].should =~ /success/
-        ensure
-          Timecop.return
-        end
-      end
+                         :service_provider_class => "Test",
+                         :credentials => ServiceProvider::Test::VALID_CREDENTIALS,
+                         :subaccount => ServiceProvider::Test::SUBACCOUNTS.first
+                         )
+      logging_data = with_output_captured { ServiceAccount.nightly_task }
+      logging_data[:stderr].should =~ /success/
+    end
+
+    it 'reports failure with valid account and invalid subaccount' do
+      FactoryGirl.create(:service_account, 
+                         :service_provider_class => "Test",
+                         :credentials => ServiceProvider::Test::VALID_CREDENTIALS,
+                         :subaccount => :not_your_grandmothers_subaccount
+                         )
+      logging_data = with_output_captured { ServiceAccount.nightly_task }
+      logging_data[:stderr].should =~ /failure/
     end
 
     it 'reports failure with invalid account' do
       FactoryGirl.create(:service_account, 
-                         :service_provider_class => "SDGE",
-                         :credentials => {
-                           "user_id" => "ChrisWrightFamily", 
-                           "password" => "i_am_not_the_password",
-                           "meter_id" => "05219047"})
-      VCR.use_cassette("ServiceAccount_reports_failure_with_invalid_account", :tag => :with_time_frozen) do
-        begin
-          logging_data = with_output_captured { ServiceAccount.nightly_task }
-          logging_data[:stderr].should =~ /failure/
-        ensure
-          Timecop.return
-        end
-      end
+                         :service_provider_class => "Test",
+                         :credentials => { :foo => :bar },
+                         :subaccount => ServiceProvider::Test::SUBACCOUNTS.first
+                         )
+      logging_data = with_output_captured { ServiceAccount.nightly_task }
+      logging_data[:stderr].should =~ /failure/
     end
 
     it 'reports error with unknown service_provider' do

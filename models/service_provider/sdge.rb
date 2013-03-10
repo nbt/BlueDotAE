@@ -1,3 +1,8 @@
+# TODO: This code will not work as is for users that have multiple
+# SDGE accounts.  From the home page, click on [My Bills and
+# Payments], and from there, click on [Show All accounts] to get the
+# complete list.  Then click on the desired account.
+
 module ServiceProvider
 
   class SDGE < Base
@@ -47,6 +52,111 @@ module ServiceProvider
       date.strftime("%Y-%m-%d")
     end
 
+    # Extract a list of subaccounts, suitable for use in subsequent
+    # calls to fetch_billing_data and service_address
+    def subaccounts
+      @subaccounts ||= fetch_subaccounts
+    end
+
+    def fetch_subaccounts
+      # NOTE: we could also fetch the subaccounts list in My Energy =>
+      # My Energy Use => GreenButton.aspx.  See comment in
+      # service_address(subaccount).
+
+      p1 = home_page
+      raise LoadError.new("cannot log in") unless p1
+
+      # click [My Energy]
+      l1 = p1.link_with(:text => /My Energy/)
+      raise(LoadError.new("failed to get My Energy link")) unless l1
+      p2 = l1.click
+
+      # click [My Energy Use]
+      l2 = p2.link_with(:text => /\AMy Energy Use\Z/)
+      raise(LoadError.new("failed to get My Energy Use link")) unless l2
+      p3 = l2.click
+        
+      options = p3.search("//select[@id='objChartSelect_ddMeter']/option")
+      texts = options.children.map {|node| node.text}
+      # texts should be a list such as ["Electric - 05219047", "Gas - 01046957"]
+      texts.map {|text| text =~ /(\d+)/ ; $1}
+    end
+
+    # out of laziness I've not implemented #service_address.  With
+    # SDGE, it requires either fetching the green button data or
+    # parsing the PDF detailed bill.  (The former is more reliable).
+    def service_address(subaccount)
+      raise(LoadError.new("unrecognized subaccount")) unless self.subaccounts.member?(subaccount)
+      # TODO: here is the argument for creating a dedicated object for
+      # each sub-account: fetching the address requires navigating to
+      # the GreenButton download page, downloading, unzipping and
+      # parsing the XML.  We'd like to cache the address for each
+      # sub-account
+
+      # TODO: DRY me: see fetch_meter_reading_from_remote
+      p1 = home_page
+      raise LoadError.new("cannot log in") unless p1
+
+      # click [My Energy]
+      l1 = p1.link_with(:text => /My Energy/)
+      raise(LoadError.new("failed to get My Energy link")) unless l1
+      p2 = l1.click
+
+      # click [My Energy Use]
+      l2 = p2.link_with(:text => /\AMy Energy Use\Z/)
+      raise(LoadError.new("failed to get My Energy Use link")) unless l2
+      p3 = l2.click
+        
+      # navigate to GreenButton
+      p4 = web_agent.get('/LoadAnalysis/GreenButton.aspx')
+
+      f4 = p4.form_with(:name => "Form1")
+
+      # Here is another source of subaccounts.  See comment in
+      # #subaccounts
+      meter_ids = f4.field_with(:name => 'ddlMeters').options
+
+      min_date = f4.field_with(:name => 'minDate').value.to_i
+      max_date = f4.field_with(:name => 'maxDate').value.to_i
+      max_days = f4.field_with(:name => 'maxDataAllowed').value.to_i
+
+      now = DateTime.now
+      midnight = DateTime.civil(now.year, now.month, now.day, 0, 0, 0, "+0")
+      newest_available = midnight + max_date
+
+      # $stderr.puts("=== #{start_date.iso8601}--#{end_date_inclusive.iso8601}  #{oldest_available.iso8601}--#{newest_available.iso8601}")
+        
+      # Submit request for data
+      # TODO: pass IANA time zone as an argument.
+      # TODO: try passing UTC as an argument to fix problem noted 
+      # in translate_meter_readings -- what happens then?
+      params = {
+        "MeterId" => subaccount.to_s,
+        "StartDate" => newest_available.prev_day.strftime("%m/%d/%Y"),
+        "EndDate" => newest_available.strftime("%m/%d/%Y"),
+        "OlsonTimeZoneKey" => "America/Los_Angeles"
+      }
+      query_string = params.map {|k,v| "#{CGI.escape(k)}=#{CGI.escape(v)}"}.join("&")
+      p5 = web_agent.get("/LoadAnalysis/Handlers/GreenButtonHandler.ashx?#{query_string}")
+
+      # Fetch resulting filename 
+      json = JSON.load(p5.body)
+      raise(RecordError.new("failed to load interval data: #{json['ErrorMessage']}")) if json['ErrorMessage']
+      filename = json["FileName"]
+
+      # get the ZIP file
+      page = web_agent.get("/LoadAnalysis/Handlers/GreenButtonHandler.ashx?file=&name=#{filename}.zip")
+      unzipped = unzip(page.body)
+      # $stderr.puts("=== zip file directories = #{unzipped.keys}")
+
+      xml_entry = unzipped.find {|k, v| k =~ /.*\.xml$/ }
+      raise LoadError.new("cannot locate xml data") unless xml_entry
+      xml_doc = Nokogiri::XML(xml_entry[1])
+      # see [nokogiri-talk] doc.xpath() abysmally slow
+      xml_doc.remove_namespaces!
+      xml_doc.at_xpath("/feed/entry/title").text
+    end
+
     # fetch_billing_data accesses the utility web site and download
     # all available billing and interval data that has not yet already
     # been downloaded.  The result of this is to add records to the
@@ -64,7 +174,9 @@ module ServiceProvider
     # the billing period.  Then use these dates to fetch the billing
     # details and metere readings for that date range.
     #
-    def fetch_billing_data
+    def fetch_billing_data(subaccount)
+      raise(LoadError.new("unrecognized subaccount")) unless self.subaccounts.member?(subaccount)
+
       # log into the remote site to get an summary list of available bills
       p1 = home_page
       raise LoadError.new("cannot log in") unless p1
@@ -80,14 +192,20 @@ module ServiceProvider
       f3 = p3.form_with(:name => /displayForm/)
       o3 = f3.field_with(:name => /^docId$/).options
 
-      billing_dates = o3.map {|option| fetch_monthly_bills(f3, option)}
+      billing_dates = o3.map do |option| 
+        begin
+          fetch_monthly_bills(subaccount, f3, option)
+        rescue RecordError => e
+          $stderr.print("\n=== rescued #{e.inspect}")
+        end
+      end.compact
 
       # At this point, we have cached both the billing_summary and the
       # billing_details for all available bills.  billing_dates is a
       # list of [[start1, end1], [start2, end2], ...].  Use this list
       # to fetch one xml file for each corresponding billing_detail.
 
-      fetch_meter_readings(billing_dates)
+      fetch_meter_readings(subaccount, billing_dates)
 
       # NB: This assumes bills are ordered most recent first
       ending_date = billing_dates[0][1]
@@ -106,9 +224,9 @@ module ServiceProvider
     #
     # Return [index, start_date, end_date(exclusive)] for each 
     # available bill
-    def fetch_monthly_bills(form, option)
-      start_date, end_date = fetch_billing_summary(form, option)
-      fetch_billing_details(form, option, start_date, end_date)
+    def fetch_monthly_bills(subaccount, form, option)
+      start_date, end_date = fetch_billing_summary(subaccount, form, option)
+      fetch_billing_details(subaccount, form, option, start_date, end_date)
 
       # finally return [start_date, end_date]
       [start_date, end_date]
@@ -123,9 +241,9 @@ module ServiceProvider
     # ================================================================
     # billing summary
 
-    def fetch_billing_summary(form, option)
+    def fetch_billing_summary(subaccount, form, option)
       date = translate_mmddyy(option.text)
-      summary_key = self.class.billing_summary_cache_key(service_account.credentials["meter_id"], date)
+      summary_key = self.class.billing_summary_cache_key(subaccount, date)
       body = WebCaches::SDGE::BillSummary.fetch(summary_key) do
         page = fetch_billing_summary_from_remote(form, option)
         page.body
@@ -156,8 +274,8 @@ module ServiceProvider
     # ================================================================
     # billing details
 
-    def fetch_billing_details(form, option, start_date, end_date)
-      details_key = self.class.billing_details_cache_key(service_account.credentials["meter_id"],
+    def fetch_billing_details(subaccount, form, option, start_date, end_date)
+      details_key = self.class.billing_details_cache_key(subaccount,
                                                          start_date,
                                                          end_date)
       WebCaches::SDGE::BillDetail.fetch(details_key) { 
@@ -176,7 +294,15 @@ module ServiceProvider
       raise RecordError.new("failed to find frame for detailed bill") unless f11
 
       p12 = f11.click
-      File.open("/tmp/#{Time.now.iso8601}.pdf", "wb") {|f| f.print(p12.body)}
+      # File.open("/tmp/#{Time.now.iso8601}.pdf", "wb") {|f| f.print(p12.body)}
+
+      # TODO: decide if this is an error or not.  If we raise an
+      # error, nothing is saved in the WebCache, so we re-try fetching
+      # it each time.  If we don't raise an error, the HTML reporting
+      # an error is cached rather than a PDF, which will require more
+      # handling in the translate / load phase.
+
+      # raise RecordError.new("expected pdf file, but got HTML instead") if p12.class == Mechanize::Page
       p12.body
     end
 
@@ -185,15 +311,15 @@ module ServiceProvider
 
     # Fetch the zipped XML files for each billing period named in 
     # billing dates, skipping any that have already been fetched.
-    def fetch_meter_readings(billing_dates)
+    def fetch_meter_readings(subaccount, billing_dates)
       billing_dates.each do |start_date, end_date|
         # $stderr.puts("=== fetch_meter_reading(#{start_date.iso8601}, #{end_date.iso8601})")
-        fetch_meter_reading(start_date, end_date)
+        fetch_meter_reading(subaccount, start_date, end_date)
       end
     end
 
-    def fetch_meter_reading(start_date, end_date)
-      readings_key = self.class.meter_readings_cache_key(service_account.credentials["meter_id"],
+    def fetch_meter_reading(subaccount, start_date, end_date)
+      readings_key = self.class.meter_readings_cache_key(subaccount,
                                                          start_date,
                                                          end_date)
       WebCaches::SDGE::MeterReading.fetch(readings_key) { 
@@ -203,7 +329,7 @@ module ServiceProvider
         # time, but code that accesses pages from the cache must check
         # to see what object is being returned.
         begin
-          fetch_meter_reading_from_remote(start_date, end_date) 
+          fetch_meter_reading_from_remote(subaccount, start_date, end_date) 
         rescue RecordError => e
           $stderr.print("\n=== rescued #{e.inspect}")
           e
@@ -211,7 +337,9 @@ module ServiceProvider
       }
     end
 
-    def fetch_meter_reading_from_remote(start_date, end_date)
+    def fetch_meter_reading_from_remote(subaccount, start_date, end_date)
+      # TODO: DRY me: see service_account
+
       # log in as needed
       p1 = home_page
       raise LoadError.new("cannot log in") unless p1
@@ -258,7 +386,7 @@ module ServiceProvider
       # TODO: try passing UTC as an argument to fix problem noted 
       # in translate_meter_readings -- what happens then?
       params = {
-        "MeterId" => service_account.credentials["meter_id"].to_s,
+        "MeterId" => subaccount.to_s,
         "StartDate" => start_date.strftime("%m/%d/%Y"),
         "EndDate" => end_date_inclusive.strftime("%m/%d/%Y"),
         "OlsonTimeZoneKey" => "America/Los_Angeles"
@@ -279,25 +407,23 @@ module ServiceProvider
     # ================================================================
     # ================================================================
 
-    # Navigate to the user's home page, logging in if needed.
-    # returns the home page.
-    def home_page
-      @home_page ||= login
-    end
-      
     def login
-      # $stderr.print("=== logging in...")
+      # $stderr.print("\n=== logging in, credentials = #{credentials}...")
       url = "#{SDGE_PORTAL}/myAccount/myAccount.portal"
       page = web_agent.get(url)
       raise(LoadError.new("failed to get login page")) unless page
       login_form = page.forms.find {|f| f.name =~ /Login/}
       raise(LoadError.new("failed to get login form")) unless login_form
-      login_form['USER'] = service_account.credentials["user_id"]
-      login_form['PASSWORD'] = service_account.credentials["password"]
+      login_form['USER'] = self.credentials["user_id"]
+      login_form['PASSWORD'] = self.credentials["password"]
       # submit form and make sure we're logged in (should NOT have login form)
       page = web_agent.submit(login_form)
-      raise(LoadError.new("login failed -- is your User ID and Password correct?")) unless logged_in?(page)
-      # $stderr.puts("... logged in")
+      if logged_in?(page)
+        # $stderr.puts("... logged in")
+      else        
+        # $stderr.puts("... failed")
+        raise(LoadError.new("login failed -- is your User ID and Password correct?"))
+      end
       page
     end
 
@@ -306,10 +432,8 @@ module ServiceProvider
     end
 
     def logout
-      set_status("logging out of #{company_name} site")
       web_agent.get(SDGE_LOGOUT)
-      # meh
-      set_status("log out completed")
+      super
     end
 
     # ================================================================
@@ -318,11 +442,11 @@ module ServiceProvider
     #
     # Translate and load
 
-    # mechanize_page is a Mechanize::Page object whose #body is a zip
-    # file of the XML with meter readings.  translate it into array of
-    # hash objects, suitable for instantiation as MeterReading objects
-    def translate_meter_readings(mechanize_page)
-      unzipped = unzip(mechanize_page.body)
+    # mechanize_page is a string in zip form of the XML with meter
+    # readings.  translate it into array of hash objects, suitable for
+    # instantiation as MeterReading objects
+    def translate_meter_readings(zipped_xml)
+      unzipped = unzip(zipped_xml)
       xml_entry = unzipped.find {|k, v| k =~ /.*\.xml$/ }
       raise LoadError.new("cannot locate xml data") unless xml_entry
       xml_doc = Nokogiri::XML(xml_entry[1])

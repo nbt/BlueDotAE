@@ -3,7 +3,7 @@ require 'vcr_helper'
 
 describe "Premises Model" do
   LA = {:lat => 33.888389, :lng => -118.4111556}
-  LA_COUNT = 38
+  LA_COUNT = 41
   MA = {:lat => 42.368813, :lng => -71.0893229}
   PA = {:lat => 39.947488, :lng => -75.178526}
   SF = {:lat => 37.7747645, :lng => -122.4292645}

@@ -22,7 +22,7 @@ describe "WeatherStation Model" do
       WeatherStation.count.should == 0
       VCR.use_cassette("WeatherStation find_stations_near finds the correct station") do
         stations = WeatherStation.find_stations_near(@lat, @lng)
-        stations.size.should == @airport_station_count + @pws_station_count
+        stations.size.should == 34
       end
     end
 
@@ -31,7 +31,7 @@ describe "WeatherStation Model" do
       VCR.use_cassette("WeatherStation find_stations_near should save stations in database") do
         s = WeatherStation.find_stations_near(@lat, @lng)
       end
-      WeatherStation.count.should == @airport_station_count + @pws_station_count
+      WeatherStation.count.should == 34
     end
 
   end

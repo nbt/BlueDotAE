@@ -1,3 +1,7 @@
+# Probably there's a more elegant way to control SimpleCov
+require 'simplecov'
+SimpleCov.start
+
 PADRINO_ENV = 'test' unless defined?(PADRINO_ENV)
 require File.expand_path(File.dirname(__FILE__) + "/../config/boot")
 
@@ -39,3 +43,4 @@ end
 def truncate_to_seconds(datetime)
   DateTime.new(datetime.year, datetime.month, datetime.day, datetime.hour, datetime.minute, datetime.second)
 end
+
