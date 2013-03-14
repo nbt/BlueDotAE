@@ -1,28 +1,14 @@
 require 'net/http'
 require 'csv'
+require 'weather_observation_properties'
 
 class WeatherObservation
   include DataMapper::Resource
 
   # property <name>, <type>
-  property :id, Serial
   belongs_to :weather_station
-  property :date, DateTime
-  property :temperature_max_f, Float
-  property :temperature_avg_f, Float
-  property :temperature_min_f, Float
-  property :dewpoint_max_f, Float
-  property :dewpoint_avg_f, Float
-  property :dewpoint_min_f, Float
-  property :humidity_max, Float
-  property :humidity_avg, Float
-  property :humidity_min, Float
-  property :pressure_max_in, Float
-  property :pressure_avg_in, Float
-  property :pressure_min_in, Float
-  property :windspeed_max_mph, Float
-  property :windspeed_avg_mph, Float
-  property :precipitation_in, Float
+  property :id, Serial
+  module_eval(WEATHER_OBSERVATION_PROPERTIES)
 
   class Loader
     attr_reader :weather_station, :start_time

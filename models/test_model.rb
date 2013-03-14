@@ -1,3 +1,6 @@
+# FactoryGirl does not properly call callbacks.  This model is here
+# only for testing purposes so we can see if/when the bug gets fixed.
+
 class TestModel
   include DataMapper::Resource
   property :id, Serial

@@ -5,9 +5,6 @@ class WeatherStation
 
   # property <name>, <type>
   property :id, Serial
-  has n, :premises_weather_station_adjacencies, :constraint => :destroy
-  has n, :premises, 'Premises', :through => :premises_weather_station_adjacencies
-  has n, :weather_observations, :constraint => :destroy
   property :callsign, String
   property :station_type, String
   property :lat, Float
@@ -16,6 +13,10 @@ class WeatherStation
   property :last_fetched_at, DateTime
   property :created_at, DateTime
   property :updated_at, DateTime
+
+  has n, :premises_weather_station_adjacencies, :constraint => :destroy
+  has n, :premises, 'Premises', :through => :premises_weather_station_adjacencies
+  has n, :weather_observations, :constraint => :destroy
 
   WUNDERGROUND_API_KEY = '61a01f40daa1353f'
 

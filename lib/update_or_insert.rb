@@ -1,3 +1,15 @@
+# TODO:
+# modularize ORM (DataMapper and ActiveRecord)
+# modularize DB (PostgreSQL, MySQL, SQLite, ORM)
+#
+# validate args
+# compile inserts
+# compile updates
+# within_transaction do
+#   execute inserts
+#   execute updates
+# end
+
 module UpdateOrInsert
   def self.included(base)
     base.extend(ClassMethods)
@@ -247,5 +259,38 @@ private
     end
 
   end
+
+  # ================================================================
+  # ANSI standard SQL loader
+  # 
+  # See: http://en.wikipedia.org/wiki/Merge_(SQL)
+
+
+  # INSERT INTO table (column1, column2, ...)
+  #      SELECT *
+  #        FROM (candidates) AS candidates
+  #   LEFT JOIN table AS incumbents
+  #          ON incumbents.key1 = candidates.key1
+  #         AND incumbents.key2 = candidates.key2
+  #         AND incumbents.key3 = candidates.key3
+  #       WHERE incumbents.column1 IS NULL
+  #
+
+  # UPDATE table
+  #   JOIN (candidates) AS candidates
+  #    SET table.column1 = candidates.column1, table.column2 = candidates.column2, ...
+  #  WHERE table.key1 = candidates.key1
+  #    AND table.key2 = candidates.key2
+  #    ...
+
+  # UPDATE table 
+  #    SET (column1, column2, ...) = (candidates.column1, candidates.column2 ...)
+  #   FROM (candidates) AS candidates
+  #  WHERE table.key1 = candidates.key1
+  #    AND table.key2 = candidates.key2
+  
+  class SQLLoader < Base
+  end
+
 
 end

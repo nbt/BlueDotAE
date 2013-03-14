@@ -15,6 +15,8 @@ class Premises
   has n, :service_accounts, :constraint => :destroy
   has n, :premises_weather_station_adjacencies, :constraint => :destroy
   has n, :weather_stations, :through => :premises_weather_station_adjacencies
+  has n, :weather_local_observations
+
 
   FIND_WEATHER_STATIONS_INTERVAL = 120 # check for new weather stations every 120 days
 
