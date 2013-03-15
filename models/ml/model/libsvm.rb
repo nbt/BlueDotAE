@@ -4,9 +4,10 @@ module ML
 
     class LIBSVM < Base
 
-      Feature = Struct.new(:name, :accesor)
+      # NOTE: for parameter selection without doing exhaustive grid search, see:
+      # http://www.ece.umn.edu/users/cherkass/N2002-SI-SVM-13-whole.pdf
 
-      def initialize(training_dataset, label_column, feature_columns, options = {})
+      def initialize(training_dataset, response_column, feature_columns, options = {})
         super
       end
       

@@ -1,7 +1,7 @@
 module ML
   module Dataset
     
-    class Example < Struct.new(:label, :features)
+    class Instance < Struct.new(:response, :features)
     end
     
   end
